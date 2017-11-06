@@ -1,0 +1,4 @@
+﻿  TSPAlgorithm.cpp
+c:\users\user\documents\visual studio 2015\projects\thesalesmanproblem\thesalesmanproblem\tspalgorithm.cpp(41): warning C4018: <: несоответствие типов со знаком и без знака
+c:\users\user\documents\visual studio 2015\projects\thesalesmanproblem\thesalesmanproblem\tspalgorithm.cpp(62): warning C4018: <: несоответствие типов со знаком и без знака
+  TheSalesmanProblem.vcxproj -> C:\Users\User\documents\visual studio 2015\Projects\TheSalesmanProblem\Debug\TheSalesmanProblem.exe
