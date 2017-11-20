@@ -1,33 +1,27 @@
 #include <vector>
-#include <algorithm>
-#include <functional> //greater
-#include <queue> //priority_queue
 #include <map> //priorityQueueMap
-#include <iostream> //temporary
 using namespace std;
 
 multimap <int, vector<int>> priorityQueueMap;
-multimap <int, vector<int>>::iterator mapIter, buffMapIter;
+multimap <int, vector<int>>::iterator mapIter;
 typedef pair <int, vector<int>> queuePair;
 
 class graph {
 public:
 	int nodesNum = 0;
 	vector<vector<int>> adjacencyList;
-	vector <int> priceHeap;
-	graph() {};
+	int lowestPrice;
+	int root;
 
 	graph(graph * example) { 	//graph for Prims algorithm
 		nodesNum = 2;
-		adjacencyList.resize(1);
 		int edgeCounter = -1;
-		//add the cheapest edge
-		while (adjacencyList.back().empty()) {
+		//add node with the cheapest edge
+		while (!root) {
 			edgeCounter++;
-			if (example->adjacencyList[edgeCounter][2] == example->priceHeap.front()) {//if the cheapest
-				for (int j = 0; j < 3; j++) {
-					adjacencyList.back().push_back(example->adjacencyList[edgeCounter][j]);//add in new graph					
-				};
+			if (example->adjacencyList[edgeCounter][2] == example->lowestPrice) {//if the cheapest
+				root = example->adjacencyList[edgeCounter][0];
+				break;
 			};
 		};
 
@@ -45,12 +39,12 @@ public:
 			{ 5,6,11 }
 		};//{node1,node2,price of edge}		
 
-		  //temporary:
+		lowestPrice = 1000;
 		for (int i = 0; i < adjacencyList.size(); i++) {
-			priceHeap.push_back(adjacencyList[i][2]);
+			if (adjacencyList[i][2] < lowestPrice) {
+				lowestPrice = adjacencyList[i][2];
+			};
 		};
-		make_heap(priceHeap.begin(), priceHeap.end());
-		sort_heap(priceHeap.begin(), priceHeap.end());//first - min; last - max;		
 	}
 	~graph() {}
 };
@@ -80,49 +74,43 @@ void PrimsAlgorithm() {
 	graph* example = new graph();
 	graph* spanningTree = new graph(example);//now it has only the cheapest edge
 	vector<int> tmp = { 0,0 };
-	vector<int> nodesWhichHasNotEdges;
+	int newNodeInGraph = spanningTree->root;
 
 	for (int i = 0; i < example->nodesNum; i++) {
-		tmp[0] = i;
-		priorityQueueMap.insert(queuePair(1000, tmp));//now nodes are in map without prices and edges
-	};
-	//deleting tree nodes from Queue:
-	bool erasePrev = false;
-	for (mapIter = priorityQueueMap.begin(); mapIter != priorityQueueMap.end(); mapIter++) {
-		if (erasePrev) {
-			priorityQueueMap.erase(buffMapIter);
-			erasePrev = false;
-		};
-		if ((mapIter->second[0] == spanningTree->adjacencyList[0][0]) || (mapIter->second[0] == spanningTree->adjacencyList[0][1])) {
-			buffMapIter = mapIter;
-			erasePrev = true;
-			nodesWhichHasNotEdges.push_back(mapIter->second[0]);
+		if (i != newNodeInGraph) {
+			tmp[0] = i;
+			priorityQueueMap.insert(queuePair(1000, tmp));//now nodes are in map without prices and edges
 		};
 	};
-	if (erasePrev) {
-		priorityQueueMap.erase(buffMapIter);
-		erasePrev = false;
-	};
+
 	//adding adjoing graph nodes in Queue:
-	for (int nodesCounter = 0; nodesCounter < nodesWhichHasNotEdges.size(); nodesCounter++) {
+	//for (int nodesCounter = 0; nodesCounter < nodesWhichHasNotEdges.size(); nodesCounter++) {
+	for (int edgesCounter = 0; edgesCounter < example->adjacencyList.size(); edgesCounter++) {
+		//if first node is added than find second in mapQueue 
+		if (example->adjacencyList[edgesCounter][0] == newNodeInGraph) {
+			addingEdgeInQueue(example, edgesCounter, tmp, 1);
+		}
+		//if second
+		else if (example->adjacencyList[edgesCounter][1] == newNodeInGraph) {
+			addingEdgeInQueue(example, edgesCounter, tmp, 0);
+		};
+	};
+	while (!priorityQueueMap.empty()) {
+		//adding new node in tree (extract min)
+		spanningTree->adjacencyList.push_back({ priorityQueueMap.begin()->second[1] ,priorityQueueMap.begin()->second[0],priorityQueueMap.begin()->first });
+		newNodeInGraph = priorityQueueMap.begin()->second[0];
+		priorityQueueMap.erase(priorityQueueMap.begin());
+		//adding adjoing graph nodes in Queue:
 		for (int edgesCounter = 0; edgesCounter < example->adjacencyList.size(); edgesCounter++) {
-			//if it isn't edge added in graph 
-			if (!(((example->adjacencyList[edgesCounter][0] == nodesWhichHasNotEdges[0]) || (example->adjacencyList[edgesCounter][0] == nodesWhichHasNotEdges[1]))
-				&& ((example->adjacencyList[edgesCounter][1] == nodesWhichHasNotEdges[0]) || (example->adjacencyList[edgesCounter][1] == nodesWhichHasNotEdges[1])))) {
-				//if first node is added than find second in mapQueue 
-				if ((example->adjacencyList[edgesCounter][0] == nodesWhichHasNotEdges[0]) || (example->adjacencyList[edgesCounter][0] == nodesWhichHasNotEdges[1])) {
-					addingEdgeInQueue(example, edgesCounter, tmp, 1);
-				}
-				//if second
-				else if ((example->adjacencyList[edgesCounter][1] == nodesWhichHasNotEdges[0]) || (example->adjacencyList[edgesCounter][1] == nodesWhichHasNotEdges[1])) {
-					addingEdgeInQueue(example, edgesCounter, tmp, 0);
-				};
+			//if first node is added than find second in mapQueue 
+			if ((example->adjacencyList[edgesCounter][0] == newNodeInGraph)) {
+				addingEdgeInQueue(example, edgesCounter, tmp, 1);
+			}
+			//if second
+			else if ((example->adjacencyList[edgesCounter][1] == newNodeInGraph)) {
+				addingEdgeInQueue(example, edgesCounter, tmp, 0);
 			};
 		};
-	};
-	nodesWhichHasNotEdges.clear();
-	int newNodeInGraph;
-	while (!priorityQueueMap.empty()) {
 
 	};
 };
