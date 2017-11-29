@@ -1,14 +1,16 @@
 #include <vector>
 #include <map> //priorityQueueMap
+#include <unordered_set> //salesmans' tour
 using namespace std;
 
 multimap <int, vector<int>> priorityQueueMap;//price, node1, node2
-multimap <int, vector<int>>::iterator mapIter; 
+multimap <int, vector<int>>::iterator mapIter;
 typedef pair <int, vector<int>> queuePair;
 struct TreeNode {
 	int nodeNum;//nodes' number 
+	TreeNode * parent;
 	vector <TreeNode*> children;//nodes' children
-	vector <int> childEdgePrice; //price of edges between 
+	vector <int> childEdgePrice; //price of edges between 	
 };
 struct Tree {
 	TreeNode* root;
@@ -16,31 +18,40 @@ struct Tree {
 	//typedef pair <int, TreeNode*> nodeListPair;
 };
 typedef pair <int, TreeNode*> nodeListPair;
-
+typedef pair <vector<int>, int> adjacencyMapListPair;
+void addingEdgesInGraph(map <vector<int>, int>* adjacencyMapList, vector<vector<int>> &adjacencyList) {
+	vector<int> tmp;
+	for (int edgeCounter = 0; edgeCounter < adjacencyList.size(); edgeCounter++) {
+		tmp.clear();
+		tmp.push_back(adjacencyList[edgeCounter][0]);
+		tmp.push_back(adjacencyList[edgeCounter][1]);
+		adjacencyMapList->insert(adjacencyMapListPair(tmp, adjacencyList[edgeCounter][2]));
+	};
+};
 class graph {
 public:
 	int nodesNum = 0;
 	vector<vector<int>> adjacencyList;
-	int lowestPrice;	
+	map <vector<int>, int>* adjacencyMapList;
+	int lowestPrice;
 	graph() {
 		//example graph
-		//A=0,B=1,C=2,D=3,E=4,F=5,G=6
-		nodesNum = 7;
+		//A=0,B=1,C=2,D=3,E=4
+		nodesNum = 5;
 		adjacencyList = {
-			{ 0,1,7 },{ 0,3,5 },
-			{ 1,2,8 },{ 1,3,9 },{ 1,4,7 },
-			{ 2,4,5 },
-			{ 3,4,15 },{ 3,5,6 },
-			{ 4,5,8 },{ 4,6,9 },
-			{ 5,6,11 }
-		};//{node1,node2,price of edge}		
-
+			{ 0,1,3 },{ 0,2,5 },{ 0,3,6 },{ 0,4,4 },
+			{ 1,2,3 },{ 1,3,6 },{ 1,4,4 },
+			{ 2,3,4 },{ 2,4,2 },
+			{ 3,4,3 }
+		};//{node1,node2,price of edge}				
+		adjacencyMapList = new map <vector<int>, int>;
+		addingEdgesInGraph(adjacencyMapList, adjacencyList);
 		lowestPrice = 1000;
 		for (int i = 0; i < adjacencyList.size(); i++) {
 			if (adjacencyList[i][2] < lowestPrice) {
 				lowestPrice = adjacencyList[i][2];
 			};
-		};		
+		};
 	}
 	~graph() {}
 };
@@ -66,24 +77,31 @@ void addingEdgeInQueue(graph *example, int &edgesCounter, vector<int> &tmp, int 
 	};
 };
 
-TreeNode * findingNodeInTree(int &nodeNum, Tree * spanningTree) {
-	TreeNode * result = new TreeNode;
-	result = spanningTree->listOfNodes.at(nodeNum);
-	return result;
-}
+void treeTraversal(TreeNode * currentNode, unordered_set<int> * tour) {
+	tour->insert(currentNode->nodeNum);
+	if (!currentNode->children.empty()) {
+		for (int i = 0; i < currentNode->children.size(); i++) {
+			currentNode = currentNode->children[i];
+			treeTraversal(currentNode, tour);
+			currentNode = currentNode->parent;
+		};
+	};
+	if (currentNode->parent) {
+		currentNode = currentNode->parent;
+	};
+};
 void addingToTheTree(int parentNum, int newNodeNum, int price, Tree * spanningTree) {
-	TreeNode* parent = findingNodeInTree(parentNum, spanningTree);
 	TreeNode* newNode = new TreeNode;
 	newNode->nodeNum = newNodeNum;
+	newNode->parent = spanningTree->listOfNodes.at(parentNum);
 	spanningTree->listOfNodes.insert(nodeListPair(newNodeNum, newNode));
-	parent->children.push_back(newNode);
-	parent->childEdgePrice.push_back(price);
-}
+	newNode->parent->children.push_back(newNode);
+	newNode->parent->childEdgePrice.push_back(price);
+};
 void PrimsAlgorithm() {
 	graph* example = new graph();
 	Tree* spanningTree = new Tree;//now it is empty
-	int edgeCounter = -1;
-	for (int edgeCounter = 0; edgeCounter < example->nodesNum; edgeCounter++) {		
+	for (int edgeCounter = 0; edgeCounter < example->adjacencyList.size(); edgeCounter++) {
 		if (example->adjacencyList[edgeCounter][2] == example->lowestPrice) {//if the cheapest
 			TreeNode * root = new TreeNode;
 			root->nodeNum = example->adjacencyList[edgeCounter][0];
@@ -100,19 +118,19 @@ void PrimsAlgorithm() {
 			tmp[0] = i;
 			priorityQueueMap.insert(queuePair(1000, tmp));//now nodes are in map without prices and edges
 		};
-	};	
+	};
 
-    //adding adjoing graph nodes in Queue:
-		for (int edgesCounter = 0; edgesCounter < example->adjacencyList.size(); edgesCounter++) {
-				//if first node is added than find second in mapQueue 
-			if (example->adjacencyList[edgesCounter][0] == newNodeInGraph) {
-				addingEdgeInQueue(example,edgesCounter,tmp,1);
-				}
-				//if second
-			else if (example->adjacencyList[edgesCounter][1] == newNodeInGraph) {
-					addingEdgeInQueue(example, edgesCounter, tmp, 0);
-				};
+	//adding adjoing graph nodes in Queue:
+	for (int edgesCounter = 0; edgesCounter < example->adjacencyList.size(); edgesCounter++) {
+		//if first node is added than find second in mapQueue 
+		if (example->adjacencyList[edgesCounter][0] == newNodeInGraph) {
+			addingEdgeInQueue(example, edgesCounter, tmp, 1);
+		}
+		//if second
+		else if (example->adjacencyList[edgesCounter][1] == newNodeInGraph) {
+			addingEdgeInQueue(example, edgesCounter, tmp, 0);
 		};
+	};
 	while (!priorityQueueMap.empty()) {
 		//adding new node in tree (extract min)
 		addingToTheTree(priorityQueueMap.begin()->second[1], priorityQueueMap.begin()->second[0], priorityQueueMap.begin()->first, spanningTree);
@@ -120,17 +138,43 @@ void PrimsAlgorithm() {
 		priorityQueueMap.erase(priorityQueueMap.begin());
 		//adding adjoing graph nodes in Queue:
 		for (int edgesCounter = 0; edgesCounter < example->adjacencyList.size(); edgesCounter++) {
-				//if first node is added than find second in mapQueue 
-				if ((example->adjacencyList[edgesCounter][0] == newNodeInGraph) ) {
-					addingEdgeInQueue(example, edgesCounter, tmp, 1);
-				}
-				//if second
-				else if ((example->adjacencyList[edgesCounter][1] == newNodeInGraph) ) {
-					addingEdgeInQueue(example, edgesCounter, tmp, 0);
-				};
+			//if first node is added than find second in mapQueue 
+			if ((example->adjacencyList[edgesCounter][0] == newNodeInGraph)) {
+				addingEdgeInQueue(example, edgesCounter, tmp, 1);
+			}
+			//if second
+			else if ((example->adjacencyList[edgesCounter][1] == newNodeInGraph)) {
+				addingEdgeInQueue(example, edgesCounter, tmp, 0);
+			};
 		};
 	};
-	//
+	unordered_set<int> * salesmansTour = new unordered_set<int>;
+	TreeNode* currentNode = spanningTree->root;
+	treeTraversal(currentNode, salesmansTour);
+	//tour cost:
+	unordered_set <int>::iterator iter, buffForIter;
+	int tourCost = 0;
+	iter = salesmansTour->begin();
+	tmp.clear();
+	tmp.push_back(*iter);
+	iter++;
+	while (iter != salesmansTour->end()) {
+		tmp.push_back(*iter);
+		if (tmp[0] < tmp[1]) {
+			tourCost += example->adjacencyMapList->at(tmp);
+			tmp.erase(tmp.begin());
+		}
+		else {
+			tmp[0] += tmp[1];
+			tmp[1] = tmp[0] - tmp[1];
+			tmp[0] -= tmp[1];
+			tourCost += example->adjacencyMapList->at(tmp);
+			tmp.pop_back();
+		};
+		iter++;
+	};
+	tmp.push_back(*salesmansTour->begin());
+	tourCost += example->adjacencyMapList->at(tmp);
 };
 
 int main() {
